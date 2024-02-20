@@ -2,6 +2,8 @@
 
 A Weather forecast CLI tool written in Golang.
 
+![](https://github.com/ovidiuanca/weather-checker/blob/main/demo.gif)
+
 ## Setup
 
 Copy the contents from `.env.sample` into a new `.env` file with your Open Weather Api Key.
