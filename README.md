@@ -1,6 +1,6 @@
 # weather-checker
 
-A Weather forecast CLI tool written in Golang.
+A Weather forecast CLI tool written in Golang using [Bubble Tea](https://github.com/charmbracelet/bubbletea) TUI toolkit.
 
 ![](https://github.com/ovidiuanca/weather-checker/blob/main/demo.gif)
 
