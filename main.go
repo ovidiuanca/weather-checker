@@ -60,11 +60,11 @@ func getWeather(city string) (float64, error) {
 			temperature = tempKelvin - 273.15
 		} else {
 			temperature = -1
-			err = fmt.Errorf("city not found")
+			err = fmt.Errorf("city \"%s\" not found", city)
 		}
 	default:
 		temperature = -1
-		err = fmt.Errorf("city not found")
+		err = fmt.Errorf("city \"%s\" not found", city)
 	}
 
 	return temperature, err
@@ -128,7 +128,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	if m.err != nil {
 		return fmt.Sprintf(
-			"\nSomething went wrong: %s\n\n%s", m.err,
+			"\nError: %s\n\n%s", m.err,
 			"(esc to quit)",
 		)
 	} else {
