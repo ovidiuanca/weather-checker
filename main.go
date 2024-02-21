@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -29,6 +30,9 @@ func getWeather(city string) (float64, error) {
 	if openWeatherKey == "" {
 		panic("OPEN_WEATHER_API_KEY is not set")
 	}
+
+	city = strings.ReplaceAll(city, " ", "+")
+	city = strings.ReplaceAll(city, "-", "%2D")
 
 	url := fmt.Sprintf("https://api.openweathermap.org/data/2.5/weather?q=%s&APPID=%s", city, openWeatherKey)
 
@@ -124,19 +128,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	if m.err != nil {
 		return fmt.Sprintf(
-			"Something went wrong: %s\n\n%s", m.err,
+			"\nSomething went wrong: %s\n\n%s", m.err,
 			"(esc to quit)",
 		)
 	} else {
 		if m.temperature == 0 {
 			return fmt.Sprintf(
-				"Enter a city end press Enter?\n\n%s\n\n%s",
+				"\nEnter a city end press Enter?\n\n%s\n\n%s",
 				m.textInput.View(),
 				"(esc to quit)",
 			) + "\n"
 		} else {
 			return fmt.Sprintf(
-				"Temperature in %s is %.1f°C\n\n%s",
+				"\nTemperature in %s is %.1f°C\n\n%s",
 				m.city,
 				m.temperature,
 				"(esc to quit)",
