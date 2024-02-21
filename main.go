@@ -42,20 +42,25 @@ func getWeather(city string) (float64, error) {
 
 	defer res.Body.Close() // nolint:errcheck
 
-	var data map[string]interface{}
+	var data map[string]any
 
 	json.NewDecoder(res.Body).Decode(&data)
 
-	mainData := data["main"]
-
 	var temperature float64
 
-	if mainData != nil {
-		tempKelvin := mainData.(map[string]interface{})["temp"].(float64)
+	switch data["cod"].(type) {
+	case float64:
+		if data["cod"].(float64) == 200 {
+			tempKelvin := data["main"].(map[string]any)["temp"].(float64)
 
-		temperature = tempKelvin - 273.15
-	} else {
-		err = fmt.Errorf("city not found, do not type spaces, special characters or numbers")
+			temperature = tempKelvin - 273.15
+		} else {
+			temperature = -1
+			err = fmt.Errorf("city not found")
+		}
+	default:
+		temperature = -1
+		err = fmt.Errorf("city not found")
 	}
 
 	return temperature, err
@@ -90,7 +95,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.city = m.textInput.Value()
 
 			return m, func() tea.Msg {
-				temp, _ := getWeather(m.city)
+				temp, err := getWeather(m.city)
+
+				if err != nil {
+					return errMsg(err)
+				}
 
 				return temperatureMsg(temp)
 			}
@@ -113,21 +122,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	if m.temperature == 0 {
+	if m.err != nil {
 		return fmt.Sprintf(
-			"Enter a city end press Enter?\n\n%s\n\n%s",
-			m.textInput.View(),
+			"Something went wrong: %s\n\n%s", m.err,
 			"(esc to quit)",
-		) + "\n"
-	} else if m.err != nil {
-		return fmt.Sprintf("Something went wrong: %s", m.err)
+		)
 	} else {
-		return fmt.Sprintf(
-			"Temperature in %s is %.1f°C\n\n%s",
-			m.city,
-			m.temperature,
-			"(esc to quit)",
-		) + "\n"
+		if m.temperature == 0 {
+			return fmt.Sprintf(
+				"Enter a city end press Enter?\n\n%s\n\n%s",
+				m.textInput.View(),
+				"(esc to quit)",
+			) + "\n"
+		} else {
+			return fmt.Sprintf(
+				"Temperature in %s is %.1f°C\n\n%s",
+				m.city,
+				m.temperature,
+				"(esc to quit)",
+			) + "\n"
+		}
 	}
 }
 
