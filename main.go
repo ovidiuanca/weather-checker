@@ -28,7 +28,9 @@ func getWeather(city string) (float64, error) {
 	openWeatherKey := os.Getenv("OPEN_WEATHER_API_KEY")
 
 	if openWeatherKey == "" {
-		panic("OPEN_WEATHER_API_KEY is not set")
+		err := fmt.Errorf("OPEN_WEATHER_API_KEY is not set")
+
+		return -1, err
 	}
 
 	city = strings.ReplaceAll(city, " ", "+")
@@ -54,13 +56,17 @@ func getWeather(city string) (float64, error) {
 
 	switch data["cod"].(type) {
 	case float64:
-		if data["cod"].(float64) == 200 {
+		switch data["cod"].(float64) {
+		case 200:
 			tempKelvin := data["main"].(map[string]any)["temp"].(float64)
 
 			temperature = tempKelvin - 273.15
-		} else {
+		case 401:
 			temperature = -1
-			err = fmt.Errorf("city \"%s\" not found", city)
+			err = fmt.Errorf("invalid API key")
+		default:
+			temperature = -1
+			err = fmt.Errorf("something went wrong")
 		}
 	default:
 		temperature = -1
