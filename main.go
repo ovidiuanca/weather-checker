@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/joho/godotenv"
@@ -16,9 +17,11 @@ import (
 
 type model struct {
 	textInput   textinput.Model
+	spinner     spinner.Model
 	city        string
 	temperature float64
 	err         error
+	isLoading   bool
 }
 
 type temperatureMsg float64
@@ -84,14 +87,23 @@ func InitialModel() model {
 	textInputModel.CharLimit = 50
 	textInputModel.Focus()
 
+	spinnerModel := spinner.New()
+	spinnerType := spinner.Dot
+	spinnerModel.Spinner = spinnerType
+
 	return model{
 		textInput: textInputModel,
+		spinner:   spinnerModel,
 		err:       nil,
+		isLoading: false,
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return textinput.Blink
+	return tea.Batch(
+		textinput.Blink,
+		m.spinner.Tick,
+	)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -100,9 +112,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-
 		case tea.KeyEnter:
 			m.city = m.textInput.Value()
+			m.isLoading = true
 
 			return m, func() tea.Msg {
 				temp, err := getWeather(m.city)
@@ -117,13 +129,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
 		}
-
+	case spinner.TickMsg:
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
 	case temperatureMsg:
 		m.temperature = float64(msg)
+		m.isLoading = false
 		return m, nil
 	// We handle errors just like any other message
 	case errMsg:
 		m.err = msg
+		m.isLoading = false
 		return m, nil
 	}
 
@@ -138,19 +154,27 @@ func (m model) View() string {
 			"(esc to quit)",
 		)
 	} else {
-		if m.temperature == 0 {
+		if m.isLoading {
 			return fmt.Sprintf(
-				"\nEnter a city end press Enter?\n\n%s\n\n%s",
-				m.textInput.View(),
+				"\n%s Loading...\n\n%s",
+				m.spinner.View(),
 				"(esc to quit)",
-			) + "\n"
+			)
 		} else {
-			return fmt.Sprintf(
-				"\nTemperature in %s is %.1f°C\n\n%s",
-				m.city,
-				m.temperature,
-				"(esc to quit)",
-			) + "\n"
+			if m.temperature == 0 {
+				return fmt.Sprintf(
+					"\nEnter a city end press Enter?\n\n%s\n\n%s",
+					m.textInput.View(),
+					"(esc to quit)",
+				) + "\n"
+			} else {
+				return fmt.Sprintf(
+					"\nTemperature in %s is %.1f°C\n\n%s",
+					m.city,
+					m.temperature,
+					"(esc to quit)",
+				) + "\n"
+			}
 		}
 	}
 }
